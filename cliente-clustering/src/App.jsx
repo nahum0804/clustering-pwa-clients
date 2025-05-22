@@ -1,22 +1,60 @@
-import { BrowserRouter as Router, Routes, Route, Link } from "react-router-dom";
-import Home from "./pages/Home";
+import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+import Login from "./pages/Login";
+import Dashboard from "./pages/Dashboard";
+import RegisterShipment from "./pages/RegistrarEnvio";
+import DeliveryStatus from "./pages/EstadoEntrega";
+import History from "./pages/Historial";
+
+const isAuthenticated = () => !!localStorage.getItem("token");
+
+const PrivateRoute = ({ children }) => {
+  return isAuthenticated() ? children : <Navigate to="/login" />;
+};
 
 function App() {
   return (
     <Router>
-      <div className="min-h-screen bg-gray-100">
-        <header className="bg-blue-600 text-white p-4">
-          <h1 className="text-xl font-semibold">Gestor de Envíos</h1>
-        </header>
-        <nav className="bg-white shadow p-4 flex gap-4">
-          <Link to="/" className="text-blue-600 font-medium">Inicio</Link>
-        </nav>
-        <main className="p-4">
-          <Routes>
-            <Route path="/" element={<Home />} />
-          </Routes>
-        </main>
-      </div>
+      <Routes>
+        {/* Rutas públicas */}
+        <Route path="/login" element={<Login />} />
+
+        {/* Rutas protegidas */}
+        <Route
+          path="/dashboard"
+          element={
+            <PrivateRoute>
+              <Dashboard />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/registro"
+          element={
+            <PrivateRoute>
+              <RegisterShipment />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/estado"
+          element={
+            <PrivateRoute>
+              <DeliveryStatus />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/historial"
+          element={
+            <PrivateRoute>
+              <History />
+            </PrivateRoute>
+          }
+        />
+
+        {/* Redirección por defecto */}
+        <Route path="*" element={<Navigate to={isAuthenticated() ? "/dashboard" : "/login"} />} />
+      </Routes>
     </Router>
   );
 }
