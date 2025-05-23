@@ -25,7 +25,7 @@ function Dashboard() {
             onClick={() => navigate("/estado")}
             className="w-full py-3 px-4 bg-green-600 text-white rounded-xl hover:bg-green-700 transition"
           >
-            Consultar Estado de Entrega
+            Consultar Estado de Entrega 
           </button>
 
           <button

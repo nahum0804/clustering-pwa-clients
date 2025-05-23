@@ -1,59 +1,88 @@
 import { useState, useEffect } from "react";
-import api from "../services/api"; // instancia axios con baseURL = "http://localhost:8000/api"
+import Select from "react-select";
+import api from "../services/api";
 
 function EstadoEntrega() {
-  /* ---------------- Estados ---------------- */
-  const [query, setQuery] = useState("");
   const [clientes, setClientes] = useState([]);
-  const [loadingClientes, setLoadingClientes] = useState(false);
-
   const [clienteSel, setClienteSel] = useState(null);
+  const [estadoSel, setEstadoSel] = useState(null);
   const [envios, setEnvios] = useState([]);
+  const [todosEnvios, setTodosEnvios] = useState([]);
+  const [loadingClientes, setLoadingClientes] = useState(false);
   const [loadingEnvios, setLoadingEnvios] = useState(false);
   const [error, setError] = useState(null);
 
-  /* ---------------- Buscar clientes ---------------- */
+  // Cargar clientes y todos los envíos inicialmente
   useEffect(() => {
-    const fetchClientes = async () => {
+    const fetchDatos = async () => {
+      setLoadingClientes(true);
+      setLoadingEnvios(true);
       try {
-        const response= await api.get("/clientes/");
-        if (!response.ok) {
-          throw new Error(`Error ${response.status}: ${response.statusText}`);
-        }
-        const data = await response.json();
-        console.log('Clientes cargados:', data);
-        setClientes(data);
+        const [clientesRes, enviosRes] = await Promise.all([
+          api.get("/clientes/"),
+          api.get("/historial_envios/")
+        ]);
+
+        setClientes(clientesRes.data);
+        setTodosEnvios(enviosRes.data); // guarda todos los envíos en memoria
+        setEnvios(enviosRes.data); // también muestra inicialmente si se desea
       } catch (err) {
-        console.error('Error al obtener clientes:', err);
-        setError('No se pudieron cargar los clientes');
+        console.error("Error al cargar datos:", err);
+        setError("Error al cargar clientes o envíos.");
+      } finally {
+        setLoadingClientes(false);
+        setLoadingEnvios(false);
       }
     };
 
-    fetchClientes();
+    fetchDatos();
   }, []);
 
-  /* ---------------- Seleccionar cliente ---------------- */
-  const obtenerEnvios = async (cliente) => {
-    setClienteSel(cliente);
-    setEnvios([]);
-    setError(null);
-    if (!cliente) return;
+  // Opciones de clientes
+  const clienteOptions = clientes.map((cliente) => ({
+    value: cliente.id_cliente,
+    label: `${cliente.cedula} - ${cliente.nombre_completo}`,
+  }));
 
-    setLoadingEnvios(true);
-    try {
-      const { data } = await api.get("/historial_envios/", {
-        params: { cliente: cliente.id_cliente }, // ?cliente=<uuid>
-      });
-      setEnvios(data);
-    } catch (e) {
-      console.error(e);
-      setError("Error al obtener los envíos");
-    } finally {
-      setLoadingEnvios(false);
+  // Opciones de estados
+  const estadoOptions = [
+    { value: "pendiente", label: "Pendiente" },
+    { value: "enviado", label: "Enviado" },
+    { value: "entregado", label: "Entregado" },
+  ];
+
+  // Filtrar envíos según cliente y estado
+  const filtrarEnvios = (cliente, estado) => {
+    let filtrados = todosEnvios;
+
+    if (cliente) {
+      filtrados = filtrados.filter(
+        (e) => e.cliente === cliente.id_cliente
+      );
     }
+
+    if (estado) {
+      filtrados = filtrados.filter(
+        (e) => e.estado?.toLowerCase().trim() === estado.value.toLowerCase().trim()
+      );
+    }
+
+    setEnvios(filtrados);
   };
 
-  /* ---------------- Render ---------------- */
+  // Handle cambio de cliente
+  const handleClienteChange = (selectedOption) => {
+    const cliente = clientes.find((c) => c.id_cliente === selectedOption?.value);
+    setClienteSel(cliente);
+    filtrarEnvios(cliente, estadoSel);
+  };
+
+  // Handle cambio de estado
+  const handleEstadoChange = (selectedOption) => {
+    setEstadoSel(selectedOption);
+    filtrarEnvios(clienteSel, selectedOption);
+  };
+
   return (
     <div className="min-h-screen flex flex-col items-center bg-gray-100 py-6 px-4">
       <div className="bg-white p-6 rounded-xl shadow-md w-full max-w-xl">
@@ -61,39 +90,40 @@ function EstadoEntrega() {
           Consultar estado de envíos
         </h2>
 
-        {/* ---- Buscador ---- */}
-        <input
-          type="text"
-          placeholder="Buscar cliente por nombre o cédula"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          className="w-full border p-2 rounded mb-3"
-        />
+        {/* ---- Selector de cliente ---- */}
+        <div className="mb-4">
+          <label className="block text-gray-700 mb-1">Buscar Cliente</label>
+          <Select
+            options={clienteOptions}
+            onChange={handleClienteChange}
+            placeholder="Buscar por cédula o nombre..."
+            isSearchable
+            value={clienteSel ? { value: clienteSel.id_cliente, label: `${clienteSel.cedula} - ${clienteSel.nombre_completo}` } : null}
+            noOptionsMessage={() => "No se encontraron clientes"}
+            className="react-select-container"
+            classNamePrefix="react-select"
+          />
+        </div>
 
-        {/* ---- Lista de clientes ---- */}
-        {loadingClientes && (
-          <p className="text-sm text-gray-500 mb-2">Buscando clientes…</p>
-        )}
+        {/* ---- Selector de estado ---- */}
+        <div className="mb-4">
+          <label className="block text-gray-700 mb-1">Filtrar por estado</label>
+          <Select
+            options={estadoOptions}
+            onChange={handleEstadoChange}
+            placeholder="Selecciona un estado"
+            isClearable
+            value={estadoSel}
+            className="react-select-container"
+            classNamePrefix="react-select"
+          />
+        </div>
 
-        {clientes.length > 0 && (
-          <ul className="max-h-40 overflow-y-auto border rounded mb-4">
-            {clientes.map((c) => (
-              <li
-                key={c.id_cliente}
-                className="px-3 py-2 cursor-pointer hover:bg-blue-50"
-                onClick={() => obtenerEnvios(c)}
-              >
-                {c.nombre_completo} – {c.cedula}
-              </li>
-            ))}
-          </ul>
-        )}
-
-        {/* ---- Cliente seleccionado ---- */}
+        {/* ---- Información del cliente seleccionado ---- */}
         {clienteSel && (
-          <div className="mb-4">
-            <p className="font-semibold">
-              Cliente:{" "}
+          <div className="mb-4 text-sm">
+            <p className="font-semibold text-gray-700">
+              Cliente seleccionado:{" "}
               <span className="text-blue-700">
                 {clienteSel.nombre_completo} – {clienteSel.cedula}
               </span>
@@ -101,16 +131,16 @@ function EstadoEntrega() {
           </div>
         )}
 
-        {/* ---- Tabla de envíos ---- */}
+        {/* ---- Estado de carga o errores ---- */}
         {loadingEnvios && (
           <p className="text-sm text-gray-500">Cargando envíos…</p>
         )}
-
         {error && <p className="text-sm text-red-600">{error}</p>}
 
+        {/* ---- Tabla de envíos ---- */}
         {envios.length > 0 && !loadingEnvios && (
           <div>
-            <h3 className="text-lg font-semibold mb-2">Envíos del cliente</h3>
+            <h3 className="text-lg font-semibold mb-2">Resultados</h3>
             <table className="w-full text-sm border">
               <thead className="bg-gray-200">
                 <tr>
@@ -141,13 +171,13 @@ function EstadoEntrega() {
         )}
 
         {/* ---- Reiniciar ---- */}
-        {clienteSel && (
+        {(clienteSel || estadoSel) && (
           <button
             className="mt-4 w-full bg-gray-300 hover:bg-gray-400 text-gray-800 px-4 py-2 rounded"
             onClick={() => {
               setClienteSel(null);
-              setEnvios([]);
-              setQuery("");
+              setEstadoSel(null);
+              setEnvios(todosEnvios); // muestra todo si deseas
             }}
           >
             Nueva consulta
