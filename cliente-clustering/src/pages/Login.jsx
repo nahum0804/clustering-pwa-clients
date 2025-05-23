@@ -15,7 +15,7 @@ function Login() {
     e.preventDefault();
 
     try {
-      // ⚠️ Esta parte es sin validaciones:
+      //  Esta parte es sin validaciones:
       // Puedes comentar/activar esta validación cuando lo necesites:
       // if (!form.email || !form.password) {
       //   setError("Todos los campos son obligatorios");
