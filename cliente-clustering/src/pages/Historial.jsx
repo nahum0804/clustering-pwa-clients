@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import api from "../services/api";
+import apiC from "../services/api_high";
 
 function Historial() {
   const [historial, setHistorial] = useState([]);
@@ -12,8 +13,8 @@ function Historial() {
     const fetchData = async () => {
       try {
         const [clientesRes, historialRes] = await Promise.all([
-          api.get("/clientes/"),
-          api.get("/historial_envios/"),
+          apiC.get("/clientes/"),
+          apiC.get("/historial_envios/"),
         ]);
 
         setClientes(clientesRes.data || []);

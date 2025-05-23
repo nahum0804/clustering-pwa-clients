@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import Select from "react-select";
 import api from "../services/api";
+import apiC from "../services/api_high";
 
 function EstadoEntrega() {
   const [clientes, setClientes] = useState([]);
@@ -19,13 +20,13 @@ function EstadoEntrega() {
       setLoadingEnvios(true);
       try {
         const [clientesRes, enviosRes] = await Promise.all([
-          api.get("/clientes/"),
-          api.get("/historial_envios/")
+          apiC.get("/clientes"),
+          apiC.get("/historial_envios/")
         ]);
 
         setClientes(clientesRes.data);
-        setTodosEnvios(enviosRes.data); // guarda todos los envíos en memoria
-        setEnvios(enviosRes.data); // también muestra inicialmente si se desea
+        setTodosEnvios(enviosRes.data); 
+        setEnvios(enviosRes.data); 
       } catch (err) {
         console.error("Error al cargar datos:", err);
         setError("Error al cargar clientes o envíos.");

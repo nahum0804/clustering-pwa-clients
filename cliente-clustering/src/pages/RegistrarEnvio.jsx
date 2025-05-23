@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import Select from "react-select";
 import QRCodeDisplay from "../components/QRCodeDisplay";
 import api from "../services/api";
+import apiC from "../services/api_high";
 
 function RegistrarEnvio() {
   const [clientes, setClientes] = useState([]);
@@ -21,7 +22,7 @@ function RegistrarEnvio() {
     const fetchClientes = async () => {
       setLoadingClientes(true);
       try {
-        const res = await api.get("/clientes/");
+        const res = await apiC.get("/clientes/");
         setClientes(res.data);
       } catch (err) {
         setError("Error al cargar clientes.");
