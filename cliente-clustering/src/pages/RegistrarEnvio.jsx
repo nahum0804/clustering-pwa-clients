@@ -11,7 +11,9 @@ function RegistrarEnvio() {
   const [form, setForm] = useState({
     destino: "",
     peso: "",
-    qr_generado: "",
+    costo_envio: "",
+    estado: "pendiente",
+    qr_codigo: "",
   });
 
   const [qrValue, setQrValue] = useState(null);
@@ -19,11 +21,13 @@ function RegistrarEnvio() {
   const [error, setError] = useState(null);
 
   useEffect(() => {
+    
     const fetchClientes = async () => {
       setLoadingClientes(true);
       try {
         const res = await apiC.get("/clientes/");
         setClientes(res.data);
+        
       } catch (err) {
         setError("Error al cargar clientes.");
       } finally {
@@ -56,20 +60,24 @@ function RegistrarEnvio() {
       return;
     }
 
-    if (!form.destino || !form.peso || !form.qr_generado) {
+    const { destino, peso, costo_envio, estado, qr_codigo } = form;
+
+    if (!destino || !peso || !costo_envio || !estado || !qr_codigo) {
       alert("Por favor completa todos los campos.");
       return;
     }
 
     const envioData = {
       cliente: clienteSel.id_cliente,
-      destino: form.destino,
-      peso: parseFloat(form.peso),
-      qr_generado: form.qr_generado,
+      destino,
+      peso: parseFloat(peso),
+      costo_envio: parseFloat(costo_envio),
+      estado,
+      qr_codigo,
     };
 
     try {
-      const response = await api.post("/control_envios/", envioData); // <== aquí corregido
+      const response = await apiC.post("/historial_envios/", envioData);
       setQrValue(JSON.stringify(response.data));
     } catch (err) {
       const msg = err?.response?.data?.detail || "Error al registrar envío.";
@@ -84,7 +92,9 @@ function RegistrarEnvio() {
     setForm({
       destino: "",
       peso: "",
-      qr_generado: "",
+      costo_envio: "",
+      estado: "pendiente",
+      qr_codigo: "",
     });
     setError(null);
   };
@@ -127,6 +137,7 @@ function RegistrarEnvio() {
               onChange={handleChange}
               className="w-full border p-2 rounded"
             />
+
             <input
               type="number"
               step="0.01"
@@ -136,11 +147,31 @@ function RegistrarEnvio() {
               onChange={handleChange}
               className="w-full border p-2 rounded"
             />
+
+            <input
+              type="number"
+              step="0.01"
+              name="costo_envio"
+              placeholder="Costo de envío"
+              value={form.costo_envio}
+              onChange={handleChange}
+              className="w-full border p-2 rounded"
+            />
+
             <input
               type="text"
-              name="qr_generado"
+              name="estado"
+              placeholder="Estado del envío"
+              value={form.estado}
+              onChange={handleChange}
+              className="w-full border p-2 rounded"
+            />
+
+            <input
+              type="text"
+              name="qr_codigo"
               placeholder="QR generado"
-              value={form.qr_generado}
+              value={form.qr_codigo}
               onChange={handleChange}
               className="w-full border p-2 rounded"
             />

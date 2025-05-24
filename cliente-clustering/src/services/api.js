@@ -1,14 +1,15 @@
 import axios from "axios";
 
-const apiC = axios.create({
-  baseURL: "http://localhost:8001/api", 
+const host = "172.24.114.141"; 
+const api = axios.create({
+  baseURL: `http://${host}:8001/api/`,
   headers: {
     "Content-Type": "application/json",
   },
 });
 
 
-apiC.interceptors.request.use((config) => {
+api.interceptors.request.use((config) => {
     const token = "#";
   //const token = localStorage.getItem("token");
   if (token) {
@@ -17,4 +18,4 @@ apiC.interceptors.request.use((config) => {
   return config;
 });
 
-export default apiC;
+export default api;
